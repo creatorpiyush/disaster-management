@@ -1,0 +1,636 @@
+Disaster-Resilient Hybrid Communication Network for a Smart City
+Study area: Gangtok, Sikkim (Himalayan smart city) · monsoon cloudburst, landslides and a glacial-lake flood
+Manasvi Choudhary (2430112)
+Kumari Sweta (2430211)
+Srishti Anand (2430221)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BLOCK DIAGRAM — SIGNAL CHAINS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Analog emergency radio (required)
+      Voice / siren source + pre-emphasis → AM / FM modulator (μ, β = Δf/fm) → RF
+      power amp + ridge-top VHF mast → CHANNEL ridge diffraction + static (AWGN) → RF
+      front end + limiter → Discriminator / envelope det. → speaker
+  Digital mobile network (required)
+      ADC + PCM fs ≥ 2W, n bits Rb = n·fs → Channel coding + BPSK / QPSK modulator →
+      Hill-top site (eNB / gNB) fibre on roads → CHANNEL Hata + terrain + AWGN → Phone
+      RF + demodulator → Decoder + DAC → voice / data
+  Satellite backup (required)
+      VSAT encoder + QPSK mod. → Up-converter + HPA + dish (uplink fu) → Satellite
+      transponder LNA → shift → HPA → CHANNEL FSPL + rain fade + skyline → Dish + LNB
+      (downlink fd) → Demodulator + decoder → shelter / EOC
+  UAV aerial base station (optional)
+      Core link via satellite backhaul → Small-cell baseband (LTE) → Drone-borne
+      antenna (altitude h) → CHANNEL air-to-ground over valleys → Phone RF +
+      demodulator → Decoder → voice / data
+  LoRa / D2D mesh (optional)
+      Phone / LoRa node: SOS text → CSS LoRa modulator (SF, BW) → Neighbour relays
+      (multi-hop) → CHANNEL ridge-blocked links + ALOHA → Gateway at shelter →
+      Satellite uplink → EOC
+    Failover order for two-way traffic: Digital mobile network → UAV cell (optional)
+    → Satellite backup → LoRa / D2D mesh (optional). The analog emergency radio
+    broadcasts alerts throughout.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LAYER 1 · ANALOG EMERGENCY RADIO (AM / FM)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Role in the hybrid design: a one-way, high-power broadcast that needs no network
+    core, works with cheap battery receivers and keeps telling citizens what to do
+    when everything else is down.
+
+  ▸ AM emergency broadcast
+    Modulation index
+      formula  μ = Am / Ac
+      values   μ = 0.80
+      result   0.80 (μ ≤ 1 avoids over-modulation)
+    Bandwidth
+      formula  B_AM = 2·fm
+      values   2 × 3.0 kHz
+      result   6.0 kHz
+    Total power
+      formula  Pt = Pc(1 + μ²/2)
+      values   Pc(1 + 0.80²/2)
+      result   1.320 · Pc 
+    Power efficiency
+      formula  η = μ² / (2 + μ²)
+      values   0.80² / (2 + 0.80²)
+      result   24.2% 
+    Spectrum
+      formula  carrier at fc, sidebands at fc ± fm with amplitude μ/2 each
+      values   fc ± 3.0 kHz
+      result   sidebands -8.0 dB below carrier 
+
+  ▸ FM emergency broadcast
+    Modulation index
+      formula  β = Δf / fm
+      values   5.0 / 3.0
+      result   1.667 
+    Carson bandwidth
+      formula  B_T = 2(Δf + fm)
+      values   2(5.0 + 3.0)
+      result   16.0 kHz
+    Spectral lines
+      formula  amplitude of line n = Jn(β)
+      values   J0=+0.417, J1=+0.576, J2=+0.274, J3=+0.081
+      result   2 significant sideband pairs 
+    FM noise advantage
+      formula  SNRo/γ = 3β²/2
+      values   1.5 × 1.67²
+      result   +6.2 dB
+
+  ▸ Ridges between the mast and the homes (real terrain, ITU-R P.526)
+    Fresnel–Kirchhoff parameter
+      formula  v = h·√(2/λ · (1/d1 + 1/d2))
+      values   h = height of the worst ridge above the direct path
+      result   computed for every home from SRTM data 
+    Knife-edge loss
+      formula  J(v) = 6.9 + 20log(√((v − 0.1)² + 1) + v − 0.1),  v > −0.78
+      values   median over 420 homes
+      result   23.1 dB  (17% of homes lose more than 30 dB)
+
+  ▸ Link budget at the edge of the district (20 km)
+    Path loss
+      formula  L = 32.44 + 20log d + 20log f + clutter + J(v)
+      values   32.44 + 20log20 + 20log100 + 12 + 23
+      result   133.5 dB
+    Received power
+      formula  Pr = Pt + Gt + Gr − L
+      values   50.0 + 6 + (-10) − 133.5
+      result   -87.5 dBm
+    Noise floor
+      formula  N = −174 + 10log B + F(man-made, ITU-R P.372) + storm rise
+      values   −174 + 10log(16000) + 21.6 + 6.0
+      result   -104.4 dBm
+    Carrier-to-noise
+      formula  CNR = Pr − N
+      values   -87.5 − (-104.4)
+      result   16.9 dB
+    Output SNR, FM (with threshold model)        30.4 dB
+    Output SNR, AM (envelope detector)           18.0 dB
+    FM coverage radius (SNRo ≥ 20 dB)            55 km
+    AM coverage radius (SNRo ≥ 20 dB)            16 km
+    Real homes with intelligible FM (SNRo ≥ 20 dB, σ = 6 dB) 90.2%
+    Citizens reached (alert)       ██████████████████████████░░░░░░░░  76.7 %
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LAYER 2 · DIGITAL MOBILE NETWORK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Role in the hybrid design: the everyday two-way voice/data network. In Gangtok
+    the hill-top sites themselves usually survive, but their fibre and power run
+    along roads that landslides cut, so whole sites go off-air; and the network
+    saturates when everyone calls at once.
+
+  ▸ Sampling and quantisation (PCM)
+    Nyquist rate
+      formula  fs ≥ 2W
+      values   2 × 3.4 kHz
+      result   6.8 kHz → chosen fs = 8.0 kHz (OK)
+    Sampling interval
+      formula  Ts = 1/fs
+      values   1 / 8.0 kHz
+      result   125.0 µs
+    Quantisation levels
+      formula  L = 2ⁿ
+      values   2^8
+      result   256 
+    Step size
+      formula  Δ = 2Vmax / L
+      values   2 × 1 V / 256
+      result   7.812 mV
+    Max quantisation error
+      formula  |e| ≤ Δ/2
+      values   7.812 / 2
+      result   3.906 mV
+    Quantisation noise power
+      formula  Nq = Δ²/12
+      values   (0.00781)² / 12
+      result   5.086e-06 V²
+    SQNR (full-scale sine)
+      formula  SQNR = 6.02n + 1.76
+      values   6.02 × 8 + 1.76
+      result   49.92 dB
+    Bit rate
+      formula  Rb = n · fs
+      values   8 × 8.0 kHz
+      result   64.0 kbps
+
+  ▸ Transmission bandwidth for the PCM stream
+    ASK (OOK)
+      formula  B = Rb(1 + α) / log2M   (raised cosine, α = 0.35)
+      values   64.0k × 1.35 / 1
+      result   86.4 kHz (null-to-null 128.0 kHz)
+    BPSK
+      formula  B = Rb(1 + α) / log2M   (raised cosine, α = 0.35)
+      values   64.0k × 1.35 / 1
+      result   86.4 kHz (null-to-null 128.0 kHz)
+    QPSK
+      formula  B = Rb(1 + α) / log2M   (raised cosine, α = 0.35)
+      values   64.0k × 1.35 / 2
+      result   43.2 kHz (null-to-null 64.0 kHz)
+    16-QAM
+      formula  B = Rb(1 + α) / log2M   (raised cosine, α = 0.35)
+      values   64.0k × 1.35 / 4
+      result   21.6 kHz (null-to-null 32.0 kHz)
+
+  ▸ Radio link at the edge of a surviving cell (QPSK)
+    Effective cell radius (F = share of sites off-air)
+      formula  R' = R / √(1 − F)
+      values   2.0 / √(1 − 0.40)
+      result   2.58 km
+    Okumura–Hata urban loss
+      formula  L = 69.55 + 26.16log f − 13.82log hb − a(hm) + (44.9 − 6.55log hb)log d
+      values   f = 900 MHz, hb = 30 m, d = 2.58 km
+      result   140.9 dB
+    Edge SNR
+      formula  SNR = Pt + G − L − penetration − N
+      result   13.1 dB
+    Eb/N0
+      formula  Eb/N0 = SNR + 10log(B/Rb)
+      values   13.1 + 10log(200000/64000)
+      result   18.0 dB
+    Bit error rate
+      formula  Pb = Q(√(2Eb/N0))
+      values   Eb/N0 = 18.0 dB
+      result   9.83e-30 
+
+  ▸ Capacity, cell splitting and blocking (Unit IV)
+    Co-channel C/I, cluster N = 7
+      formula  C/I = (√(3N))ⁿ / 6, n = 4
+      values   (√21)⁴ / 6
+      result   18.7 dB
+    Cell splitting
+      formula  cells × 4 per split, capacity × 4
+      values   split level 0
+      result   1× capacity per km² 
+    Offered load per surviving cell
+      formula  A = A0 · surge / (1 − F) / 4^split
+      values   40 × 3.0 / 0.60 / 1
+      result   200.0 Erlang
+    Erlang-B blocking
+      formula  B(A, N) = (Aᴺ/N!) / Σ(Aᵏ/k!)
+      values   A = 200.0, N = 56
+      result   72.2% 
+    Area coverage of surviving cells             97.3%
+    Citizens reached (two-way)     █████████░░░░░░░░░░░░░░░░░░░░░░░░░  25.1 %
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LAYER 3 · SATELLITE BACKUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Role in the hybrid design: a link that does not depend on anything on the ground
+    except the terminal itself. It backhauls shelters, hospitals and the emergency
+    operations centre when fibre and towers are gone. Its weak point is rain fade at
+    high frequency.
+
+  ▸ Geometry (GEO, altitude 35,786 km, elevation 58°)
+    Slant range
+      formula  d = √((Re+h)² − (Re·cos El)²) − Re·sin El
+      values   Re = 6378 km, h = 35,786 km, El = 58°
+      result   36,645 km
+    Propagation delay
+      formula  τ = 2d / c   (user → satellite → gateway)
+      values   2 × 36,645 / 3×10⁵
+      result   244.5 ms
+
+  ▸ Free-space path loss (Ku-band: up 14 GHz / down 12 GHz)
+    Uplink FSPL
+      formula  L = 92.45 + 20log d(km) + 20log f(GHz)
+      values   92.45 + 20log36645 + 20log14
+      result   206.64 dB
+    Downlink FSPL
+      formula  L = 92.45 + 20log d(km) + 20log f(GHz)
+      values   92.45 + 20log36645 + 20log12
+      result   205.30 dB
+
+  ▸ Terrain at the terminal: Gangtok ridge (1635 m above sea level, real SRTM skyline)
+    Look angles to a GEO satellite at 83° E
+      formula  El = atan((cos γ − Re/(Re+h)) / sin γ),  cos γ = cos φ·cos Δλ
+      values   φ = 27.3° N, Δλ = -5.6°
+      result   El = 57.5°, Az = 192° 
+    Ridge height in that direction
+      formula  max over the path of atan((z − z0)/d − d/(2kRe))
+      result   0.0° → clear sky to the satellite
+    Slant path through the rain
+      formula  Ls = (hR − hs) / sin El   (ITU-R P.839 rain height)
+      values   (5.0 − 1.63) / sin 58°
+      result   3.99 km  (a sea-level station would have 5.93 km)
+
+  ▸ Rain fade at 80 mm/h (ITU-R P.838 / P.618)
+    Specific attenuation
+      formula  γ = k·R^α
+      values   0.02386 × 80^1.1825
+      result   4.247 dB/km
+    Downlink rain attenuation
+      formula  A = γ · Ls · r(reduction)
+      result   12.99 dB
+    Uplink rain attenuation
+      formula  A_up ≈ A_down (fu/fd)^1.72
+      result   16.93 dB
+    Rain noise temperature
+      formula  ΔT = 275(1 − 10^(−A/10))
+      result   261 K
+
+  ▸ Link budget
+    Terminal dish gain (rx)
+      formula  G = 10log(η(πD/λ)²)
+      values   η = 0.6, D = 1.2 m
+      result   41.4 dBi
+    Figure of merit
+      formula  G/T = G − 10log(Tsys + ΔT)
+      values   41.4 − 10log(200 + 261)
+      result   14.7 dB/K
+    Downlink C/N0
+      formula  EIRP − L − A − Latm + G/T + 228.6
+      values   50 − 205.3 − 13.0 − 0.5 + 14.7 + 228.6
+      result   74.5 dB-Hz
+    Uplink C/N0
+      formula  EIRP_t − L − A − Latm + (G/T)sat + 228.6
+      values   55.7 − 206.6 − 16.9 − 0.5 + 5 + 228.6
+      result   65.2 dB-Hz
+    Total C/N0
+      formula  (C/N0)⁻¹ = (C/N0)up⁻¹ + (C/N0)down⁻¹
+      result   64.7 dB-Hz
+    Eb/N0
+      formula  Eb/N0 = C/N0 − 10log Rb
+      values   64.7 − 10log(256000)
+      result   10.7 dB
+    Link margin over required 6 dB (QPSK + FEC)  +4.7 dB
+    Citizens reached (via shelters) █████████████████████████░░░░░░░░░  74.3 %
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SUPPLEMENTARY LAYER A · UAV AERIAL BASE STATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Optional extension. This layer is not one of the three required layers. It is
+    included as an additional option that could complement them: a drone or tethered
+    aerostat carrying a small cell can restore coverage over valleys whose cell
+    sites lost their fibre, once the cloudburst passes. It is backhauled through the
+    satellite layer. Gangtok sits at ~1600 m, so the air is thin.
+    Air-to-ground LoS probability
+      formula  P_LoS(θ) = 1 / (1 + a·exp(−b(θ − a)))
+      values   Urban: a = 9.61, b = 0.16
+      result   θ = elevation angle seen by the user 
+    Mean path loss
+      formula  PL = FSPL(d) + P_LoS·η_LoS + (1 − P_LoS)·η_NLoS
+      values   η_LoS = 1.0 dB, η_NLoS = 20.0 dB
+      result   (Al-Hourani et al., 2014) 
+    Maximum allowed path loss
+      formula  PLmax = Pt − (sensitivity + storm noise)
+      values   23 − (-92 + 6.0)
+      result   109.0 dB
+    Coverage radius at h
+      formula  largest r with PL(h, r) ≤ PLmax
+      values   h = 500 m
+      result   1.05 km
+    Optimal altitude
+      formula  h* = argmax R(h)
+      result   1740 m → R = 1.99 km (theory; drones are usually limited to ~120–400 m)
+    Area served
+      formula  A = N·π·R²
+      values   6 × π × 1.05²
+      result   20.6 km² of 100 km²
+    Air density at flight altitude
+      formula  ρ/ρ0 = (1 − 2.2558·10⁻⁵·h)^4.2559   (ICAO standard atmosphere)
+      values   h = 1600 + 500 m
+      result   0.813 
+    Endurance in thin air
+      formula  E = E0·√(ρ/ρ0)   (hover power ∝ 1/√ρ)
+      values   35 min × √0.813
+      result   31.6 min
+    Time on station
+      formula  E / (E + battery swap 12 min)
+      result   72% 
+    Flight availability
+      formula  p_fly = 1/(1 + e^((wind − limit·√ρ)/2)) · 1/(1 + e^((rain − 25)/5))
+      values   wind 8 m/s, limit 15→13.5 m/s, rain 5 mm/h
+      result   92.4% 
+    Citizens reached (two-way)     ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  13.1 %
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SUPPLEMENTARY LAYER B · LORA / D2D MESH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Optional extension. This layer is not one of the three required layers. It is
+    included as an additional option: low-power LoRa radios or phones in
+    device-to-device mode relay short SOS and status messages to a gateway, with no
+    tower and no grid power needed.
+    LoRa bit rate
+      formula  Rb = SF · BW / 2^SF · 4/(4+CR)
+      values   9 × 125 kHz / 2^9 × 4/5
+      result   1758 bit/s
+    Receiver sensitivity
+      formula  S = −174 + 10log BW + NF + SNRreq(SF)
+      values   −174 + 10log(125000) + 6 + (-12.5)
+      result   -129.5 dBm
+    Ridges between neighbours (real terrain)
+      formula  share of home pairs ≤ 2 km apart with no line of sight
+      values   420 homes, SRTM profiles
+      result   76% blocked → extra loss 6 + 20 × 0.76 = 21.2 dB
+    Node-to-node range
+      formula  PL = 128.95 + 23.2 log10(d) + terrain loss + storm noise
+      result   0.63 km
+    Time on air
+      formula  T = (Npre + 4.25)Tsym + Npayload·Tsym  (Semtech AN1200.13)
+      values   24-byte message
+      result   206 ms
+    Duty-cycle check
+      formula  T · msgs/h ≤ 1 % of 3600 s
+      values   0.206 × 12
+      result   OK 
+    Mean node degree
+      formula  k = λ·π·r²
+      values   λ = 84 / 8² km⁻²
+      result   1.65 
+    Connected fraction
+      formula  S = 1 − exp(−k·S)   (giant component)
+      result   66.6% 
+    Collision-free delivery
+      formula  P = exp(−2G)   (pure ALOHA)
+      values   G = 0.365 Erlang
+      result   48.2% 
+    Citizens reached (two-way text) ████████░░░░░░░░░░░░░░░░░░░░░░░░░░  22.5 %
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  COMPARISON OF ALL LAYERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Hazard intensity 0.40 · During cloudburst · zone: Whole district (real Gangtok
+    terrain). Each layer is evaluated with its own physical model; the hybrid
+    assumes the layers fail independently, so availability = 1 − Π(1 − p_i).
+
+    Layer                            Reach   Data rate   Latency  Type
+······················································································
+    Analog emergency radio            77%   15.0 kb/s       1 ms  required
+    Digital mobile network            25%    2.0 Mb/s      30 ms  required
+    Satellite backup                  72%  512.0 kb/s     257 ms  required
+    UAV aerial base station            0%   10.0 Mb/s      35 ms  optional extension
+    LoRa / D2D mesh                   22%    1.8 kb/s     780 ms  optional extension
+······················································································
+    Hybrid (3 required layers, two-way)
+      formula  A = 1 − (1 − p_mobile)(1 − p_satellite)
+      values   1 − (1 − 0.25)(1 − 0.72)
+      result   78.8% 
+    Hybrid + supplementary layers (two-way)
+      formula  A = 1 − Π(1 − p_i), i ∈ {mobile, sat, UAV, mesh}
+      result   83.5% 
+    Alert reach (any layer incl. analog radio)
+      formula  1 − Π over all five layers
+      result   96.2% 
+    Hybrid, required layers        ███████████████████████████░░░░░░░  78.8 %
+    Hybrid, with optional layers   ████████████████████████████░░░░░░  83.5 %
+
+  ▸ Every zone and phase: two-way hybrid, 3 required layers → with optional layers
+                                  Whole   Ridge town       Slopes       Valley
+    During cloudburst           79%→84%      81%→82%      77%→87%      57%→74%
+    Glacial-lake flood          79%→89%      79%→82%      79%→92%      39%→75%
+    Recovery                    81%→96%      81%→89%      81%→97%      81%→97%
+    Best single two-way layer here: Satellite backup (72%). The required three-layer
+    hybrid reaches 79% two-way; adding the optional layers could raise this to 84%.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  NOISE & SIGNAL-QUALITY LAB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    AWGN model: r = s + n with n ~ N(0, N0/2) per dimension. The storm adds
+    impulsive noise (lightning, arcing power lines): with probability p a sample
+    sees noise K dB stronger.
+    ASK (OOK)
+      formula  SNR = Es/N0 = k·Eb/N0  ·  BER from Q-function
+      values   Eb/N0 = 8.0 dB, k = 1
+      result   SNR 8.0 dB · BER 6.00e-03 · Monte-Carlo 6.10e-03 
+    BPSK
+      formula  SNR = Es/N0 = k·Eb/N0  ·  BER from Q-function
+      values   Eb/N0 = 8.0 dB, k = 1
+      result   SNR 8.0 dB · BER 1.91e-04 · Monte-Carlo 1.70e-04 
+    QPSK
+      formula  SNR = Es/N0 = k·Eb/N0  ·  BER from Q-function
+      values   Eb/N0 = 8.0 dB, k = 2
+      result   SNR 11.0 dB · BER 1.91e-04 · Monte-Carlo 1.85e-04 
+    16-QAM
+      formula  SNR = Es/N0 = k·Eb/N0  ·  BER from Q-function
+      values   Eb/N0 = 8.0 dB, k = 4
+      result   SNR 14.0 dB · BER 9.25e-03 · Monte-Carlo 9.24e-03 
+    Shannon capacity
+      formula  C/B = log2(1 + SNR)
+      values   SNR = 8.0 dB
+      result   2.87 bit/s/Hz
+
+  ▸ SNR of each layer at the default storm
+    Analog emergency radio (FM output SNR)       30.4 dB
+    Digital mobile network (cell-edge SNR)       13.1 dB
+    Satellite backup (Eb/N0)                     9.4 dB
+    LoRa / D2D mesh (LoRa demod. threshold)      -12.5 dB
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  REFERENCES USED IN THE MODELS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Each entry is followed by what it is used for in the simulator. Please verify
+    the edition or version you cite against your library copy.
+
+    [1] S. Haykin and M. Moher, Communication Systems, 5th ed. Wiley, 2009.
+        used for: AM/FM modulation, envelope detection, FM figure of merit
+
+    [2] J. G. Proakis and M. Salehi, Digital Communications, 5th ed. McGraw-Hill,
+        2008.
+        used for: BER of ASK/BPSK/QPSK/16-QAM, Q-function, Monte-Carlo method
+
+    [3] T. S. Rappaport, Wireless Communications: Principles and Practice, 2nd ed.
+        Prentice Hall, 2002.
+        used for: cellular concept, frequency reuse, C/I, cell splitting, Erlang-B
+
+    [4] B. P. Lathi and Z. Ding, Modern Digital and Analog Communication Systems,
+        4th ed. OUP, 2009.
+        used for: sampling theorem, PCM, quantisation noise, SQNR = 6.02n + 1.76 dB
+
+    [5] G. Maral, M. Bousquet and Z. Sun, Satellite Communications Systems, 6th ed.
+        Wiley, 2020.
+        used for: slant range, link budget, C/N0, uplink/downlink combination
+
+    [6] T. Pratt and J. E. Allnutt, Satellite Communications, 3rd ed. Wiley, 2019.
+        used for: G/T, rain noise temperature, GEO vs LEO
+
+    [7] ITU-R Recommendation P.618, Propagation data and prediction methods required
+        for the design of Earth-space telecommunication systems.
+        used for: rain-attenuation path reduction
+
+    [8] ITU-R Recommendation P.838-3, Specific attenuation model for rain for use in
+        prediction methods, 2005.
+        used for: γ = k·R^α coefficients
+
+    [9] ITU-R Recommendation P.525, Calculation of free-space attenuation.
+        used for: FSPL formula
+
+   [10] ITU-R Recommendation P.372, Radio noise.
+        used for: man-made noise figure in urban areas
+
+   [11] H. Taub, D. L. Schilling and G. Saha, Principles of Communication Systems,
+        4th ed. McGraw-Hill, 2013.
+        used for: FM threshold effect (click-noise model)
+
+   [12] M. Hata, "Empirical formula for propagation loss in land mobile radio
+        services," IEEE Trans. Vehicular Technology, vol. 29, no. 3, pp. 317–325,
+        1980.
+        used for: Okumura–Hata urban path loss
+
+   [13] A. Al-Hourani, S. Kandeepan and S. Lardner, "Optimal LAP altitude for
+        maximum coverage," IEEE Wireless Communications Letters, vol. 3, no. 6, pp.
+        569–572, 2014.
+        used for: UAV air-to-ground model
+
+   [14] M. Mozaffari, W. Saad, M. Bennis, Y.-H. Nam and M. Debbah, "A tutorial on
+        UAVs for wireless networks: applications, challenges, and open problems,"
+        IEEE Communications Surveys & Tutorials, vol. 21, no. 3, pp. 2334–2360,
+        2019.
+        used for: UAV base stations for disaster recovery
+
+   [15] N. Abramson, "The ALOHA system — another alternative for computer
+        communications," Proc. AFIPS Fall Joint Computer Conference, 1970.
+        used for: pure-ALOHA collision model
+
+   [16] Semtech Corp., AN1200.13 "LoRa Modem Designer's Guide", 2013.
+        used for: LoRa time on air, bit rate
+
+   [17] J. Petäjäjärvi, K. Mikhaylov, A. Roivainen, T. Hänninen and M. Pettissalo,
+        "On the coverage of LPWANs: range evaluation and channel attenuation model
+        for LoRa technology," Proc. 14th Int. Conf. on ITS Telecommunications
+        (ITST), 2015.
+        used for: measured LoRa path-loss model
+
+   [18] M. E. J. Newman, Networks: An Introduction. Oxford University Press, 2010.
+        used for: giant-component (percolation) approximation
+
+   [19] T. Sakano et al., "Disaster-resilient networking: a new vision based on
+        movable and deployable resource units," IEEE Network, vol. 27, no. 4, pp.
+        40–46, 2013.
+        used for: lessons of the 2011 Great East Japan Earthquake; deployable units
+
+   [20] FCC Public Safety and Homeland Security Bureau, "2017 Atlantic Hurricane
+        Season Impact on Communications: Report and Recommendations," Aug. 2018.
+        used for: cell-site outages after hurricanes
+
+   [21] A. Augustin, J. Yi, T. Clausen and W. M. Townsley, "A study of LoRa: long
+        range & low power networks for the Internet of Things," Sensors, vol. 16,
+        no. 9, 1466, 2016.
+        used for: LoRa physical layer
+
+   [22] M. C. Bor, U. Roedig, T. Voigt and J. M. Alonso, "Do LoRa low-power
+        wide-area networks scale?" Proc. ACM MSWiM, 2016.
+        used for: LoRa collisions and scalability
+
+   [23] C. E. Shannon, "A mathematical theory of communication," Bell System
+        Technical Journal, vol. 27, 1948.
+        used for: channel capacity C = B log2(1 + SNR)
+
+   [24] J. R. Carson, "Notes on the theory of modulation," Proc. IRE, vol. 10, no.
+        1, pp. 57–64, 1922.
+        used for: Carson bandwidth rule
+
+   [25] 3GPP TR 38.811, Study on New Radio (NR) to support non-terrestrial networks.
+        used for: satellite integration with mobile networks
+
+   [26] I. del Portillo, B. G. Cameron and E. F. Crawley, "A technical comparison of
+        three low earth orbit satellite constellation systems to provide global
+        broadband," Acta Astronautica, vol. 159, pp. 123–135, 2019.
+        used for: LEO constellation link budgets and latency
+
+   [27] D. Middleton, "Statistical-physical models of electromagnetic interference,"
+        IEEE Trans. Electromagnetic Compatibility, vol. EMC-19, no. 3, pp. 106–127,
+        1977.
+        used for: impulsive (storm) noise
+
+   [28] ITU-R Recommendation P.526, Propagation by diffraction.
+        used for: knife-edge diffraction loss J(v) over the Himalayan ridges
+
+   [29] ITU-R Recommendation P.839, Rain height model for prediction methods.
+        used for: rain height; shorter rain path for a station at 1.6 km altitude
+
+   [30] ICAO Doc 7488/3, Manual of the ICAO Standard Atmosphere, 1993.
+        used for: air density at altitude (UAV thrust and endurance)
+
+   [31] N. Caine, "The rainfall intensity–duration control of shallow landslides and
+        debris flows," Geografiska Annaler: Series A, vol. 62, no. 1–2, pp. 23–27,
+        1980.
+        used for: landslide rainfall threshold I = 14.82·D^−0.39
+
+   [32] F. Guzzetti, S. Peruccacci, M. Rossi and C. P. Stark, "The rainfall
+        intensity–duration control of shallow landslides and debris flows: an
+        update," Landslides, vol. 5, pp. 3–17, 2008.
+        used for: landslide thresholds (update and discussion)
+
+   [33] T. G. Farr et al., "The Shuttle Radar Topography Mission," Reviews of
+        Geophysics, vol. 45, RG2004, 2007.
+        used for: elevation data (SRTM) for Gangtok and the Teesta valley
+
+   [34] A. D. Nobre et al., "Height Above the Nearest Drainage – a hydrologically
+        relevant new terrain model," Journal of Hydrology, vol. 404, pp. 13–29,
+        2011.
+        used for: flood zone of the GLOF (height above the Teesta)
+
+   [35] A. Sattar et al., "The Sikkim flood of October 2023: drivers, causes and
+        impacts of a multihazard cascade," Science, 2025. (check volume and pages)
+        used for: the 2023 South Lhonak GLOF down the Teesta
+
+   [36] OpenStreetMap contributors, map data (roads, rivers, settlements),
+        openstreetmap.org, ODbL licence.
+        used for: real roads (fibre and power routes), rivers and settlements
+
+   [37] OpenTopoData public API, opentopodata.org (SRTM 30 m and 90 m datasets).
+        used for: access to the elevation data
+
+   [38] K. Aki, "Maximum likelihood estimate of b in the formula log N = a − bM and
+        its confidence limits," Bulletin of the Earthquake Research Institute, vol.
+        43, pp. 237–239, 1965.
+        used for: b-value of the Sikkim earthquake catalogue
+
+   [39] B. Gutenberg and C. F. Richter, "Frequency of earthquakes in California,"
+        Bulletin of the Seismological Society of America, vol. 34, no. 4, pp.
+        185–188, 1944.
+        used for: magnitude–frequency law
+
+   [40] D. A. Vallado, Fundamentals of Astrodynamics and Applications, 4th ed.
+        Microcosm Press, 2013.
+        used for: Kepler propagation, J2 drift, look angles of real satellites
+
+   [41] NOAA Space Weather Prediction Center, "NOAA Space Weather Scales",
+        swpc.noaa.gov.
+        used for: G (geomagnetic) and R (radio blackout) scales
+
+   [42] Live data services (accessed on the date of the snapshot): Open-Meteo
+        forecast and historical (ERA5) APIs; CelesTrak GP data; GDACS; NASA EONET
+        v3; USGS earthquake catalogue; NOAA SWPC; OpenTopoData; Natural Earth.
+        used for: menu 13, live-data hub (option 6 writes the exact citations)

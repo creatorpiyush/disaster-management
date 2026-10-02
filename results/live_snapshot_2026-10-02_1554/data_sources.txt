@@ -1,0 +1,10 @@
+Data sources (accessed 02 October 2026):
+
+[1] Open-Meteo.com, Weather Forecast API and Historical Weather API (ERA5 reanalysis), CC BY 4.0.
+[2] CelesTrak, GP element sets (Starlink, OneWeb, Iridium NEXT, GEO, space stations), celestrak.org.
+[3] GDACS, Global Disaster Alert and Coordination System (UN OCHA / European Commission JRC), gdacs.org.
+[4] NASA Earth Observatory Natural Event Tracker (EONET) v3, eonet.gsfc.nasa.gov.
+[5] U.S. Geological Survey, Earthquake Catalog (FDSN event web service), earthquake.usgs.gov.
+[6] NOAA Space Weather Prediction Center, planetary K-index, GOES X-ray flux and F10.7, swpc.noaa.gov.
+[7] OpenTopoData public API, SRTM 30 m dataset, opentopodata.org.
+[8] Natural Earth, 1:110m land and 1:50m admin-0 boundaries (public domain), naturalearthdata.com.

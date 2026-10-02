@@ -1,14 +1,14 @@
-"""Console look-and-feel: colours, banner, menus and step-by-step calculation printing."""
+"""Terminal output helpers (colours, menus, printing the calculations)."""
 import os
 import sys
-import time
+import textwrap
 
 from . import config as C
 
 W = 86
 _COLOR = sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
 if os.name == "nt":
-    os.system("")            # enables ANSI escape codes on Windows 10+
+    os.system("")  # weird trick but it turns on ANSI colours in the Windows terminal
 try:
     sys.stdout.reconfigure(encoding="utf-8")
 except Exception:
@@ -28,17 +28,6 @@ def hr(ch="─", col=grey):
     print(col(ch * W))
 
 
-def type_out(text, delay=0.004):
-    if not _COLOR:
-        print(text)
-        return
-    for ch in text:
-        sys.stdout.write(ch)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
-
-
 def banner():
     art = [
         r"   ____  ___ ____    _    ____ _____ _____ ____      _   _ _____ _____ ",
@@ -56,24 +45,8 @@ def banner():
     hr("═", cyan)
     print(bold("  PROJECT TEAM"))
     for n, r in C.MEMBERS:
-        print(f"    • {n:<24} Roll no. {r}")
+        print(f"    - {n:<24} Roll no. {r}")
     hr()
-
-
-def boot():
-    steps = ["Loading propagation models (Hata, ITU-R P.525 / P.618 / P.838)",
-             "Loading modulation library (AM, FM, ASK, BPSK, QPSK, 16-QAM)",
-             "Loading satellite link budget (GEO / LEO)",
-             "Loading supplementary layers (UAV air-to-ground, LoRa mesh)",
-             "Calibrating cyclone scenario"]
-    for s in steps:
-        sys.stdout.write(f"  {grey('›')} {s} ")
-        sys.stdout.flush()
-        for _ in range(3):
-            time.sleep(0.05 if _COLOR else 0)
-            sys.stdout.write(grey("."))
-            sys.stdout.flush()
-        print(" " + green("ok"))
 
 
 def head(title, tint=cyan):
@@ -85,16 +58,21 @@ def head(title, tint=cyan):
 
 def sub(title):
     print()
-    print(bold("  ▸ " + title))
+    print(bold("  > " + title))
 
 
 def note(text):
-    for line in _wrap(text, W - 6):
+    for line in textwrap.wrap(text, W - 6):
         print(grey("    " + line))
 
 
+def controls_help():
+    note("Controls: drag a slider, click its red dot to put it back to default, R resets everything, "
+         "Space pauses. Close the window to get back to the menu.")
+
+
 def calc(label, formula, working, result, unit=""):
-    """Print one textbook-style calculation: formula → substituted values → answer."""
+    # formula / values / result, like you'd write it in the exam
     print(f"    {bold(label)}")
     print(f"      {grey('formula ')} {formula}")
     if working:
@@ -123,15 +101,15 @@ def ask(prompt, valid):
         try:
             s = input(prompt).strip()
         except (EOFError, KeyboardInterrupt):
-            print("\n  Session ended. Thank you.")
+            print("\n  bye")
             sys.exit(0)
         if s in valid:
             return s
-        print(red(f"  ✖  '{s}' is not an option. Please type one of: {', '.join(valid)}"))
+        print(red(f"  '{s}'?? pick one of: {', '.join(valid)}"))
 
 
 def menu(title, items):
-    """items: list of (key, label, hint) or None for a divider line."""
+    # items: (key, label, hint) tuples, a str for a section heading, None for a blank line
     print()
     hr("─")
     print(bold("  " + title))
@@ -149,23 +127,12 @@ def menu(title, items):
         print(f"   {bold(cyan(f'[{k:>2}]'))}  {lab:<46} {grey(hint)}")
     hr("─")
     nums = sorted(int(k) for k in keys if k.isdigit())
-    rng = f"{nums[0]}–{nums[-1]}" if nums else ", ".join(keys)
-    return ask(f"  Enter your choice ({rng}) ➜ ", keys)
+    rng = f"{nums[0]}-{nums[-1]}" if nums else ", ".join(keys)
+    return ask(f"  Choice ({rng}): ", keys)
 
 
 def pause(msg="Press Enter to open the interactive simulation"):
     try:
-        input(grey(f"\n  {msg} ↵ "))
+        input(grey(f"\n  {msg} "))
     except (EOFError, KeyboardInterrupt):
         print()
-
-
-def _wrap(text, width):
-    out, line = [], ""
-    for w in text.split():
-        if len(line) + len(w) + 1 > width:
-            out.append(line)
-            line = w
-        else:
-            line = (line + " " + w).strip()
-    return out + ([line] if line else [])

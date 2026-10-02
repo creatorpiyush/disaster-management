@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-"""
-One-time download of the real geography used by the simulator (already bundled in
-resilient_net/data/, so the program never needs the internet to run).
-
-    python tools/fetch_gangtok_data.py
-
-Sources (free, no API key):
-  * Elevation : OpenTopoData public API, SRTM 30 m and 90 m (NASA SRTM, Farr et al. 2007)
-  * Map layers: OpenStreetMap via the Overpass API (roads, rivers, settlements, masts)
-"""
+"""One-off download of the SRTM + OSM data (already bundled in resilient_net/data)."""
 import json
 import os
 import sys
@@ -22,8 +13,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "resilient_net", "data")
 UA = {"User-Agent": "disaster-net-student-project/1.0"}
 
-INNER = dict(lat=(27.20, 27.42), lon=(88.45, 88.70), n=(100, 100), dataset="srtm30m")   # ~25 km, 250 m cells
-OUTER = dict(lat=(26.85, 27.85), lon=(88.10, 89.10), n=(46, 46), dataset="srtm90m")     # ~110 km, 2.4 km cells
+INNER = dict(lat=(27.20, 27.42), lon=(88.45, 88.70), n=(100, 100), dataset="srtm30m")  # ~25 km, 250 m cells
+OUTER = dict(lat=(26.85, 27.85), lon=(88.10, 89.10), n=(46, 46), dataset="srtm90m")  # ~110 km, 2.4 km cells
 
 
 def _get(url, data=None, tries=4):
@@ -32,7 +23,7 @@ def _get(url, data=None, tries=4):
             req = urllib.request.Request(url, data=data, headers=UA)
             with urllib.request.urlopen(req, timeout=60) as r:
                 return json.load(r)
-        except Exception as exc:                              # rate limit or network hiccup → back off
+        except Exception as exc:  # rate limit or network hiccup -> back off
             print(f"    retry {k + 1}: {exc}")
             time.sleep(3 * (k + 1))
     raise RuntimeError(f"failed: {url[:80]}")
@@ -43,7 +34,7 @@ def fetch_grid(spec):
     lons = np.linspace(*spec["lon"], spec["n"][1])
     pts = [(la, lo) for la in lats for lo in lons]
     z = []
-    for i in range(0, len(pts), 100):                        # public API: 100 points per call, 1 call / s
+    for i in range(0, len(pts), 100):  # public API: 100 points per call, 1 call / s
         chunk = "|".join(f"{la:.5f},{lo:.5f}" for la, lo in pts[i:i + 100])
         res = _get(f"https://api.opentopodata.org/v1/{spec['dataset']}?locations={chunk}")["results"]
         z += [r["elevation"] if r["elevation"] is not None else np.nan for r in res]
@@ -52,7 +43,7 @@ def fetch_grid(spec):
         time.sleep(1.1)
     print()
     z = np.array(z, dtype=float).reshape(len(lats), len(lons))
-    if np.isnan(z).any():                                    # fill rare voids with the mean of the grid
+    if np.isnan(z).any():  # fill rare voids with the mean of the grid
         z[np.isnan(z)] = np.nanmean(z)
     return lats, lons, z
 

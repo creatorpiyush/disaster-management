@@ -1,10 +1,4 @@
-"""
-Theme, figure scaffolding and the control panel used by every interactive view.
-
-Every slider carries a RED DOT at its default value. Clicking on (or releasing
-the handle near) the red dot snaps the slider back to that default; the
-"Reset" button or the R key restores every control at once.
-"""
+"""matplotlib theme + the slider/button panel shared by all views (red dot = default, R = reset)."""
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, RadioButtons, CheckButtons
@@ -26,15 +20,37 @@ def apply_theme():
         "lines.linewidth": 2.0, "axes.axisbelow": True, "font.size": 9, "font.family": "DejaVu Sans",
         "toolbar": "toolbar2",
     })
-    for key in ("keymap.home", "keymap.back"):      # free the R key for "reset"
+    for key in ("keymap.home", "keymap.back"):  # we want R for reset
         try:
             mpl.rcParams[key] = [k for k in mpl.rcParams[key] if k not in ("r", "R")]
         except KeyError:
             pass
 
 
+def fit_to_screen(fig):
+    # on small screens (1366x768 laptops) just drop the dpi so the whole layout scales down together
+    sw = sh = None
+    try:
+        win = fig.canvas.manager.window
+        if hasattr(win, "winfo_screenwidth"):  # tk
+            sw, sh = win.winfo_screenwidth(), win.winfo_screenheight()
+        elif hasattr(win, "screen"):  # qt
+            g = win.screen().availableGeometry()
+            sw, sh = g.width(), g.height()
+    except Exception:
+        return
+    if not sw:
+        return
+    w, h = fig.get_size_inches()
+    dpi = min(fig.dpi, 0.97 * sw / w, 0.88 * sh / h)  # 0.88 so the taskbar doesn't cover it
+    if dpi < fig.dpi:
+        fig.set_dpi(dpi)
+        fig.set_size_inches(w, h, forward=True)
+
+
 def new_figure(title, subtitle="", tag="", size=(16, 9.4)):
     fig = plt.figure(figsize=size)
+    fit_to_screen(fig)
     try:
         fig.canvas.manager.set_window_title(title)
     except Exception:
@@ -45,15 +61,15 @@ def new_figure(title, subtitle="", tag="", size=(16, 9.4)):
     if tag:
         fig.text(0.985, 0.972, f"  {tag}  ", fontsize=9, color=C.BG, va="top", ha="right", fontweight="bold",
                  bbox=dict(boxstyle="round,pad=0.35", fc=C.INK2, ec="none"))
-    fig.text(0.985, 0.006, "  ·  ".join(f"{n} ({r})" for n, r in C.MEMBERS), ha="right", va="bottom",
+    fig.text(0.985, 0.006, ",  ".join(f"{n} ({r})" for n, r in C.MEMBERS), ha="right", va="bottom",
              fontsize=7, color=C.MUTED)
-    fig.text(0.015, 0.006, "Red dot = default value · click the dot to snap back · R = reset all · "
-             "Space = pause / play", ha="left", va="bottom", fontsize=7, color=C.MUTED)
+    fig.text(0.015, 0.006, "red dot = default (click to snap back)   R = reset   space = pause",
+             ha="left", va="bottom", fontsize=7, color=C.MUTED)
     return fig
 
 
 def readout(ax):
-    """Turn an axes into a monospace text panel; returns the Text artist."""
+    # turns an axes into a little monospace text box, returns the Text so views can set_text() it
     ax.set_axis_off()
     ax.add_patch(mpl.patches.FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0,rounding_size=0.03",
                                             transform=ax.transAxes, fc="#202124", ec=C.GRID, lw=1))
@@ -66,10 +82,7 @@ def status_colour(ok):
 
 
 class Controls:
-    """Bottom control deck: sliders in columns, radio groups and a reset button.
-
-    on_change(values) is called after any control moves.
-    """
+    """Sliders / radios / checkboxes at the bottom of a figure. Calls on_change(values) on any change."""
 
     def __init__(self, fig, on_change, rect=(0.015, 0.035, 0.70, 0.17), cols=2, rows=None, row_h=0.026):
         self.fig, self.on_change, self.rect, self.cols, self.row_h = fig, on_change, rect, cols, row_h
@@ -77,6 +90,7 @@ class Controls:
         self.sliders, self.radios, self.checks, self.defaults, self.values = {}, {}, {}, {}, {}
         self._n = 0
         self._mute = False
+        self._buttons = []  # matplotlib only keeps weak refs to callbacks, so hold on to the buttons
         x, y, w, h = rect
         bg = fig.add_axes([x, y, w, max(h, 1e-3)], zorder=-1)
         bg.set_axis_off()
@@ -85,7 +99,6 @@ class Controls:
                                                     transform=bg.transAxes, fc="#1d1f22", ec=C.GRID, lw=1))
         fig.canvas.mpl_connect("key_press_event", self._key)
 
-    # -- sliders ------------------------------------------------------------
     def slider(self, key, label, vmin, vmax, init, step=None, fmt="%.1f", color=None):
         x, y, w, h = self.rect
         rows = self.rows or max(1, int((h - 0.02) // self.row_h))
@@ -101,7 +114,7 @@ class Controls:
         try:
             s = Slider(ax, label, vmin, vmax, initcolor="none",
                        handle_style=dict(facecolor=C.INK, edgecolor="#5a5a5a", size=11), **kw)
-        except TypeError:   # older matplotlib
+        except TypeError:  # matplotlib < 3.5
             s = Slider(ax, label, vmin, vmax, **kw)
         s.label.set_color(C.INK2)
         s.label.set_fontsize(8)
@@ -122,7 +135,6 @@ class Controls:
         self.sliders[key], self.defaults[key], self.values[key] = s, init, init
         return s
 
-    # -- radio groups -------------------------------------------------------
     def radio(self, key, title, options, init, rect):
         ax = self.fig.add_axes(rect, facecolor="#1d1f22")
         ax.set_title(title, fontsize=8.5, color=C.INK2, loc="left", pad=3)
@@ -163,25 +175,17 @@ class Controls:
         self.values[key] = dict(zip(options, actives))
         return c
 
-    def reset_button(self, rect, label="↺  Reset all to red dots"):
-        ax = self.fig.add_axes(rect)
-        b = Button(ax, label, color="#2a2c30", hovercolor="#3a3d42")
-        b.label.set_color(C.INK)
-        b.label.set_fontsize(8.5)
-        b.on_clicked(lambda _e: self.reset())
-        self._reset_btn = b
-        return b
+    def reset_button(self, rect, label="Reset all"):
+        return self.button(rect, label, self.reset)
 
     def button(self, rect, label, callback):
-        ax = self.fig.add_axes(rect)
-        b = Button(ax, label, color="#2a2c30", hovercolor="#3a3d42")
+        b = Button(self.fig.add_axes(rect), label, color="#2a2c30", hovercolor="#3a3d42")
         b.label.set_color(C.INK)
         b.label.set_fontsize(8.5)
         b.on_clicked(lambda _e: callback())
-        setattr(self, f"_btn_{len(self.__dict__)}", b)
+        self._buttons.append(b)
         return b
 
-    # -- internals ----------------------------------------------------------
     def _changed(self, key, val):
         self.values[key] = val
         if not self._mute:
@@ -205,7 +209,7 @@ class Controls:
             self.reset()
 
     def set(self, key, val):
-        """Programmatic change (used by the self-test)."""
+        # only the self-test uses this
         if key in self.sliders:
             self.sliders[key].set_val(val)
         elif key in self.radios:
@@ -214,7 +218,7 @@ class Controls:
 
 
 class Player:
-    """Space bar toggles the animation; views read .running."""
+    # space bar = pause/play. views check .running each frame
 
     def __init__(self, fig):
         self.running = True

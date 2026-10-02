@@ -1,0 +1,114 @@
+Live-data snapshot taken 02 October 2026, 15:54 IST
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LIVE · WEATHER OVER GANGTOK AND ITS EFFECT ON EVERY LAYER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Source: Open-Meteo forecast API for Gangtok (27.33° N, 88.61° E, 1650 m) · LIVE
+    · fetched 02 Oct 2026 15:54.
+    Now: rain / gusts / temperature              0.1 mm · 8.2 m/s · 21.0 °C
+    Rain in the last 72 h                        16 mm
+    Rain forecast for the next 72 h              31 mm
+    Landslide index now (Caine 1980)
+      formula  max over D of  (ΣR/D) / (14.82·D^−0.39)
+      values   D = 1 … 72 h
+      result   0.11 (> 1 means the rainfall threshold for shallow landslides is exceeded)
+    Highest index in the forecast
+      formula  
+      values   at 03 Oct 15:00 IST
+      result   0.45 
+    Worst forecast hour for the Ku-band VSAT
+      formula  A = γ·Ls·r,  γ = k·R^α  (R = hourly rain × peak factor 2)
+      values   R = 11.6 mm/h at 03 Oct 15:00
+      result   fade 2.1 dB → margin +18.7 dB 
+    Drones able to fly now                       92%
+    Hybrid two-way reach now (3 required → + optional) 100% → 100%
+
+  ▸ Replays of real past weather (Open-Meteo archive, ERA5 reanalysis)
+    Oct 2023 GLOF week (01 Oct 2023 → 06 Oct)    59 mm · peak 4.3 mm/h · landslide index max 0.37
+    wettest monsoon days (25 Jun 2026 → 30 Jun)  216 mm · peak 24.3 mm/h · landslide index max 1.64
+    Reanalysis smooths short convective bursts, so real peak rates are higher than
+    these hourly values. Note that the October 2023 outburst flood came with only
+    moderate rain at Gangtok: a GLOF is a hazard that local weather monitoring alone
+    would not have warned about.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LIVE · REAL SATELLITES OVER GANGTOK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Orbital elements from CelesTrak (CACHED · fetched 02 Oct 2026 13:59). Positions
+    are propagated with Kepler's equation + J2 secular drift. 'Usable' = above the
+    minimum elevation (25° for LEO) and above the real terrain skyline of the
+    Gangtok ridge.
+
+    Group       tracked  above horizon  usable now
+    Starlink      11125            395          42
+    OneWeb          651             41          11
+    Iridium          80              3           1
+    GEO             567            351         318
+    Stations         22              1           0
+    Highest usable Starlink: STARLINK-34229
+      formula  FSPL = 92.45 + 20log d(km) + 20log f(GHz)
+      values   El 72.0°, d = 505 km, f = 11.7 GHz
+      result   167.9 dB · one-way delay 1.7 ms
+    Highest usable Indian GEO: GSAT-6
+      formula  FSPL = 92.45 + 20log d(km) + 20log f(GHz)
+      values   El 57.9°, d = 36,619 km, f = 11.7 GHz
+      result   205.1 dB · one-way delay 122.1 ms
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LIVE · ACTIVE DISASTERS WORLDWIDE AND EARTHQUAKES AROUND SIKKIM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    GDACS (UN OCHA / European Commission JRC): CACHED · fetched 02 Oct 2026 14:56 ·
+    NASA EONET v3: LIVE · fetched 02 Oct 2026 15:54 · USGS Earthquake Hazards
+    Program: CACHED · fetched 02 Oct 2026 14:56
+    Active events listed (GDACS + EONET)         400
+    Orange / red GDACS alerts                    4
+      Orange Drought          Drought in Austria, Bosnia  and  Herzegovina
+      Orange Drought          Drought in The Bahamas, Belize, Costa Rica, 
+      Orange Drought          Drought in Democratic Republic of Congo, Ken
+      Orange Drought          Drought in Democratic Republic of Congo, Cen
+
+  ▸ Earthquakes (M ≥ 3) within 500 km of Gangtok, last 90 days (USGS)
+      M5.2  26 Aug 2026    322 km  55 km NW of Kodāri̇̄, Nepal
+      M4.8  19 Sep 2026    252 km  8 km WSW of Mongar, Bhutan
+      M4.3  12 Jul 2026    281 km  45 km E of Tura, India
+      M4.2  26 Aug 2026    327 km  62 km NW of Kodāri̇̄, Nepal
+      M4.2  21 Jul 2026    396 km  87 km NE of Tawang, India
+    Nearest event                                M4.8, 252 km away (8 km WSW of Mongar, Bhutan)
+    Gutenberg–Richter b-value (Aki 1965)
+      formula  b = log10(e) / (M̄ − (Mc − ΔM/2))
+      values   33 events with M ≥ 4.0 in the 20–35° N, 78–98° E box
+      result   0.88 (≈ 1 is typical; few events and an incomplete catalogue make this rough)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LIVE · SPACE WEATHER AND WHAT IT MEANS FOR EACH LAYER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    NOAA SWPC: CACHED · fetched 02 Oct 2026 15:53. Scales: NOAA space-weather scales
+    (G for geomagnetic storms from Kp, R for radio blackouts from GOES 0.1–0.8 nm
+    X-ray flux).
+    Planetary Kp (latest 3-hour value)           0.33 → quiet
+    Max Kp in the record shown                   4.00 → quiet
+    GOES X-ray flux now                          2.13e-07 W/m² (class B2.1, radio blackout none)
+    Largest flare in the record                  C1.5
+    F10.7 solar radio flux (latest)              93 sfu
+    Analog radio (VHF FM / MF AM)                not affected (VHF/MF ground wave)
+    HF links (if used for backhaul)              normal
+    Satellite Ku-band (VSAT)                     minor scintillation only
+    Satellite L-band (Iridium) / GNSS            scintillation risk LOW
+    UAV navigation (GNSS)                        normal
+    Geomagnetic storm level                      Kp 0.3 → quiet
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LIVE · TERRAIN PATH PROFILE, FRESNEL ZONE AND DIFFRACTION LOSS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ITU-R P.526 single dominant knife edge over the real SRTM profile; Earth
+    curvature with k = 4/3. A path is 'clear' when the first Fresnel zone is at
+    least 60 % free of terrain.
+
+    Path (100 MHz FM, 50 m mast, 1.5 m radio)       km      v  J(v) dB  FSPL dB
+    FM mast → Gangtok                              6.3   1.96     18.9     88.4
+    FM mast → Ranipool                            10.6   6.59     29.2     93.0
+    FM mast → Singtam                             21.9   5.11     27.0     99.3
+    FM mast → Dikchu                              13.8   0.95     13.6     95.2
+    FM mast → Pakyong                             15.1  -4.11      0.0     96.0
+    Gangtok → Singtam                             15.7   7.62     30.5     96.3
+    Elevation source: OpenTopoData (SRTM 30 m) · CACHED · fetched 02 Oct 2026 13:56
