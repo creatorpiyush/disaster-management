@@ -1,0 +1,25 @@
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# downloads from the live data hub (rebuilt automatically, offline falls back to resilient_net/data)
+live_cache/
+
+# leftovers from `python main.py --selftest`
+figures/selftest_*.png
+
+# word lock files while the article is open
+article/~$*
+
+# editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
