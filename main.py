@@ -122,7 +122,47 @@ def selftest():
         except Exception as exc:
             ok = False
             print(ui.red(f"  FAIL  {title}: {exc!r}"))
+    try:
+        check_simple()
+        print(ui.green("  ok    ") + "Simple version (simple.py)")
+    except Exception as exc:
+        ok = False
+        print(ui.red(f"  FAIL  Simple version (simple.py): {exc!r}"))
     return hub.selftest() and ok
+
+
+def check_simple():
+    # simple.py has its own copy of the equations, make sure it still gives the same numbers
+    import matplotlib.pyplot as plt
+    import simple
+    from resilient_net import models as M
+    from resilient_net.views import compare
+    for name in ("STORM", "ANALOG", "DIGITAL", "SAT"):
+        mine, full = getattr(simple, name), getattr(C, name)
+        diff = [k for k in mine if mine[k] != full[k]]
+        assert not diff, f"simple.{name} differs from config.py: {diff}"
+    for phase in simple.PHASES:
+        a, b = simple.storm_for(80, 40, 6, phase), compare.storm_for(0.4, phase)
+        assert all(abs(a[k] - b[k]) < 1e-9 for k in a), f"phase rules differ for {phase}"
+        for rain, towers, noise in ((0, 0, 0), (80, 40, 6), (200, 95, 25)):
+            r = simple.evaluate(rain, towers, noise, phase)
+            s = r["storm"]
+            want = dict(
+                an=M.analog_layer(**{**C.ANALOG, "noise_rise": s["noise_rise"], "wind": s["wind"]}),
+                mo=M.mobile_layer(**{**C.DIGITAL, "mod": "QPSK", "towers_down": s["towers_down"],
+                                     "surge": s["surge"], "noise_rise": s["noise_rise"]}),
+                sa=M.satellite_layer(**{**C.SAT, "rain": s["rain"], "wind": s["wind"]}))
+            for k, w in want.items():
+                assert abs(r[k]["reach"] - w["reach"]) < 1e-9, \
+                    f"{k} reach {r[k]['reach']:.6f} != models.py {w['reach']:.6f} ({phase}, {rain}/{towers}/{noise})"
+    fig, sliders, radio = simple.build()
+    for sl in sliders.values():
+        sl.set_val(sl.valmin)
+        sl.set_val(sl.valmax)
+    for i in range(len(simple.PHASES)):
+        radio.set_active(i)
+    fig.canvas.draw()
+    plt.close(fig)
 
 
 def main():

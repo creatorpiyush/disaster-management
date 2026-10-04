@@ -8,7 +8,7 @@ The terrain is real:
 
 Each layer of the network opens as a live, animated window with sliders. Menu 13 adds live open data, such as today's weather, real satellites overhead, current disasters and space weather.
 
-New to this? Read [GUIDE_SIMPLE.md](GUIDE_SIMPLE.md) first. It explains everything in plain language.
+New to this? Read [GUIDE_SIMPLE.md](GUIDE_SIMPLE.md) first. It explains everything in plain language. For every window, control and workflow, see [MANUAL.md](MANUAL.md).
 
 ## Run it
 
@@ -22,6 +22,8 @@ python main.py --lite       # slower animation for low-power laptops (combine wi
 python main.py --export     # saves all figures to ./figures and all calculations to ./results
 python main.py --selftest   # runs every window headless (live views use the bundled samples)
 ```
+
+For a one-window version with just the three required layers and the hybrid, run `python simple.py` (see [MANUAL.md](MANUAL.md#13-simple-version)).
 
 On Windows, activate with `.venv\Scripts\activate` instead of `source .venv/bin/activate`.
 
@@ -75,6 +77,7 @@ Without internet, the hub uses the last download in `live_cache/`, or else the s
 
 ```
 main.py                       menu, export, self-test
+simple.py                     one-window version: 3 required layers + hybrid, self-contained
 resilient_net/config.py       team, layer names, colours, default values (the red dots)
 resilient_net/models.py       every equation (AM/FM, PCM, BER, Hata, Erlang-B, FSPL, rain fade,
                               air-to-ground, LoRa, ALOHA, hybrid availability)
